@@ -2,9 +2,17 @@ package com.example.pantrymanager;
 
 import android.content.ContentValues;
 import android.content.Context;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Manages the app's single SQLite database: creation, schema, seed data,
+ * and (as the app grows) read/write queries for pantry items and recipes.
+ */
 public class PantryDbHelper extends SQLiteOpenHelper {
 
     private static final String DATABASE_NAME = "pantry_manager.db";
@@ -24,7 +32,7 @@ public class PantryDbHelper extends SQLiteOpenHelper {
     public static final String COL_RECIPE_NAME = "recipe_name";
     public static final String COL_RECIPE_STEPS = "preparation_steps";
 
-    // ---------- Table: recipe_ingredients (child of recipes) ----------
+    // ---------- Table: recipe_ingredients (child of recipes, one row per required ingredient) ----------
     public static final String TABLE_RECIPE_INGREDIENTS = "recipe_ingredients";
     public static final String COL_RI_ID = "_id";
     public static final String COL_RI_RECIPE_ID = "recipe_id";       // FK -> recipes._id
@@ -36,6 +44,7 @@ public class PantryDbHelper extends SQLiteOpenHelper {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
 
+    // Called once, the first time the database is created on a device.
     @Override
     public void onCreate(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE " + TABLE_PANTRY_ITEMS + " (" +
@@ -52,6 +61,9 @@ public class PantryDbHelper extends SQLiteOpenHelper {
                 COL_RECIPE_STEPS + " TEXT" +
                 ")");
 
+        // recipe_ingredients is a separate table (rather than a comma-delimited string
+        // column on recipes) so that the strict-matching query in a later stage can be
+        // done with a simple join/count, instead of manually parsing strings.
         db.execSQL("CREATE TABLE " + TABLE_RECIPE_INGREDIENTS + " (" +
                 COL_RI_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
                 COL_RI_RECIPE_ID + " INTEGER NOT NULL, " +
@@ -65,6 +77,8 @@ public class PantryDbHelper extends SQLiteOpenHelper {
         seedRecipes(db);
     }
 
+    // Called if DATABASE_VERSION is increased in a future update.
+    // For this project, we just wipe and rebuild rather than migrating data in place.
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_RECIPE_INGREDIENTS);
@@ -73,7 +87,57 @@ public class PantryDbHelper extends SQLiteOpenHelper {
         onCreate(db);
     }
 
-    // ---------- Seed data: 16 recipes with their required ingredients ----------
+    /**
+     * Reads every row from pantry_items, newest first, and converts each
+     * row into a PantryItem object for use in the UI.
+     */
+    public List<PantryItem> getAllPantryItems() {
+        List<PantryItem> items = new ArrayList<>();
+        SQLiteDatabase db = getReadableDatabase();
+
+        Cursor cursor = db.query(
+                TABLE_PANTRY_ITEMS,
+                null,
+                null, null, null, null,
+                COL_PANTRY_ID + " DESC"
+        );
+
+        if (cursor.moveToFirst()) {
+            do {
+                long id = cursor.getLong(cursor.getColumnIndexOrThrow(COL_PANTRY_ID));
+                String name = cursor.getString(cursor.getColumnIndexOrThrow(COL_PANTRY_NAME));
+                double quantity = cursor.getDouble(cursor.getColumnIndexOrThrow(COL_PANTRY_QUANTITY));
+                String unit = cursor.getString(cursor.getColumnIndexOrThrow(COL_PANTRY_UNIT));
+                String expiry = cursor.getString(cursor.getColumnIndexOrThrow(COL_PANTRY_EXPIRY));
+                items.add(new PantryItem(id, name, quantity, unit, expiry));
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+        return items;
+    }
+
+    // Inserts one recipe row plus all of its required-ingredient rows.
+    // Used only at first launch, to seed the 15-20 starter recipes the brief requires.
+    private void insertRecipe(SQLiteDatabase db, String name, String steps, Object[][] ingredients) {
+        ContentValues recipeValues = new ContentValues();
+        recipeValues.put(COL_RECIPE_NAME, name);
+        recipeValues.put(COL_RECIPE_STEPS, steps);
+        long recipeId = db.insert(TABLE_RECIPES, null, recipeValues);
+
+        for (Object[] ing : ingredients) {
+            ContentValues riValues = new ContentValues();
+            riValues.put(COL_RI_RECIPE_ID, recipeId);
+            riValues.put(COL_RI_INGREDIENT_NAME, (String) ing[0]);
+            riValues.put(COL_RI_QUANTITY, ((Number) ing[1]).doubleValue());
+            riValues.put(COL_RI_UNIT, (String) ing[2]);
+            db.insert(TABLE_RECIPE_INGREDIENTS, null, riValues);
+        }
+    }
+
+    // Seed data: 17 recipes with their required ingredients (brief asks for 15-20).
+    // Ingredient names are kept lowercase/singular for consistent matching later
+    // (e.g. "tomato" not "Tomatoes") — the strict-matching stage will normalize
+    // user pantry input the same way.
     private void seedRecipes(SQLiteDatabase db) {
         insertRecipe(db, "Tomato Egg Stir Fry", "Beat eggs. Heat oil, scramble eggs, set aside. Saute tomato until soft. Combine, season, serve.",
                 new Object[][]{
@@ -209,26 +273,4 @@ public class PantryDbHelper extends SQLiteOpenHelper {
                         {"butter", 1, "tbsp"}
                 });
     }
-
-    // Helper: inserts one recipe row + its ingredient rows in a single transaction.
-    private void insertRecipe(SQLiteDatabase db, String name, String steps, Object[][] ingredients) {
-        ContentValues recipeValues = new ContentValues();
-        recipeValues.put(COL_RECIPE_NAME, name);
-        recipeValues.put(COL_RECIPE_STEPS, steps);
-        long recipeId = db.insert(TABLE_RECIPES, null, recipeValues);
-
-        for (Object[] ing : ingredients) {
-            ContentValues riValues = new ContentValues();
-            riValues.put(COL_RI_RECIPE_ID, recipeId);
-            riValues.put(COL_RI_INGREDIENT_NAME, (String) ing[0]);
-            riValues.put(COL_RI_QUANTITY, ((Number) ing[1]).doubleValue());
-            riValues.put(COL_RI_UNIT, (String) ing[2]);
-            db.insert(TABLE_RECIPE_INGREDIENTS, null, riValues);
-        }
-    }
 }
-
-// DESIGN NOTES:
-//Ingredient names go in as lowercase, singular where practical ("tomato", "garlic clove") — this matters for stage 5's matching normalization (tomato vs tomatoes), so keep that convention consistent when you add pantry items too.
-//recipe_ingredients is a proper child table with a recipe_id foreign key, not a delimited string — that's what makes the strict-match query in stage 5 a straightforward join/count instead of string parsing.
-//onUpgrade just drops and recreates
