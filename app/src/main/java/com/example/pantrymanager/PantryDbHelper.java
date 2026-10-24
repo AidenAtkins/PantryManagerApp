@@ -116,6 +116,59 @@ public class PantryDbHelper extends SQLiteOpenHelper {
         return items;
     }
 
+    /**
+     * Inserts a new pantry item. Returns the new row id, or -1 if the insert failed.
+     */
+    public long insertPantryItem(String name, double quantity, String unit, String expiryDate) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(COL_PANTRY_NAME, name);
+        values.put(COL_PANTRY_QUANTITY, quantity);
+        values.put(COL_PANTRY_UNIT, unit);
+        values.put(COL_PANTRY_EXPIRY, expiryDate); // null is stored as NULL (no expiry)
+        return db.insert(TABLE_PANTRY_ITEMS, null, values);
+    }
+
+    /**
+     * Updates an existing pantry item. Returns the number of rows changed (1 on success).
+     */
+    public int updatePantryItem(long id, String name, double quantity, String unit, String expiryDate) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(COL_PANTRY_NAME, name);
+        values.put(COL_PANTRY_QUANTITY, quantity);
+        values.put(COL_PANTRY_UNIT, unit);
+        values.put(COL_PANTRY_EXPIRY, expiryDate);
+        return db.update(TABLE_PANTRY_ITEMS, values, COL_PANTRY_ID + " = ?",
+                new String[]{String.valueOf(id)});
+    }
+
+    /**
+     * Loads a single pantry item by id (used to pre-fill the edit screen).
+     * Returns null if no row with that id exists.
+     */
+    public PantryItem getPantryItemById(long id) {
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor cursor = db.query(
+                TABLE_PANTRY_ITEMS,
+                null,
+                COL_PANTRY_ID + " = ?",
+                new String[]{String.valueOf(id)},
+                null, null, null
+        );
+
+        PantryItem item = null;
+        if (cursor.moveToFirst()) {
+            String name = cursor.getString(cursor.getColumnIndexOrThrow(COL_PANTRY_NAME));
+            double quantity = cursor.getDouble(cursor.getColumnIndexOrThrow(COL_PANTRY_QUANTITY));
+            String unit = cursor.getString(cursor.getColumnIndexOrThrow(COL_PANTRY_UNIT));
+            String expiry = cursor.getString(cursor.getColumnIndexOrThrow(COL_PANTRY_EXPIRY));
+            item = new PantryItem(id, name, quantity, unit, expiry);
+        }
+        cursor.close();
+        return item;
+    }
+
     // Inserts one recipe row plus all of its required-ingredient rows.
     // Used only at first launch, to seed the 15-20 starter recipes the brief requires.
     private void insertRecipe(SQLiteDatabase db, String name, String steps, Object[][] ingredients) {

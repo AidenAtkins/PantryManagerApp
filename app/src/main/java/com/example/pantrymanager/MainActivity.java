@@ -12,6 +12,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import android.content.Intent;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
@@ -20,7 +21,7 @@ import java.util.List;
 /**
  * The app's launcher screen — doubles as the "Pantry List" screen from the brief.
  * Shows all pantry items in a RecyclerView, an empty-state message when there
- * are none, and a "+" button that will open the Add/Edit screen in stage 3.
+ * are none.
  */
 public class MainActivity extends AppCompatActivity {
 
@@ -50,8 +51,9 @@ public class MainActivity extends AppCompatActivity {
 
         FloatingActionButton fabAddItem = findViewById(R.id.fab_add_item);
         fabAddItem.setOnClickListener(v -> {
-            // TODO stage 3: launch AddEditIngredientActivity via Intent
-            Toast.makeText(this, "Add item screen coming in stage 3", Toast.LENGTH_SHORT).show();
+            // ADD mode: no extras, so the screen opens with a blank form.
+            Intent intent = new Intent(MainActivity.this, AddEditIngredientActivity.class);
+            startActivity(intent);
         });
     }
 
@@ -75,8 +77,10 @@ public class MainActivity extends AppCompatActivity {
         }
 
         adapter = new PantryAdapter(items, item -> {
-            // TODO stage 3: launch AddEditIngredientActivity in edit mode, passing item.getId()
-            Toast.makeText(this, "Edit " + item.getIngredientName() + " coming in stage 3", Toast.LENGTH_SHORT).show();
+            // EDIT mode: pass the item's id so the next screen can load and pre-fill it.
+            Intent intent = new Intent(MainActivity.this, AddEditIngredientActivity.class);
+            intent.putExtra(AddEditIngredientActivity.EXTRA_ITEM_ID, item.getId());
+            startActivity(intent);
         });
         recyclerView.setAdapter(adapter);
     }

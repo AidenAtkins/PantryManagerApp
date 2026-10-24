@@ -3,4 +3,31 @@
     <string name="pantry_title">My Pantry</string>
     <string name="no_pantry_items">No ingredients yet. Tap + to add your first item.</string>
     <string name="add_item">Add pantry item</string>
+    <string name="add_ingredient_title">Add Ingredient</string>
+    <string name="edit_ingredient_title">Edit Ingredient</string>
+    <string name="hint_ingredient_name">Ingredient name</string>
+    <string name="hint_quantity">Quantity</string>
+    <string name="label_unit">Unit</string>
+    <string name="hint_expiry">Expiry date (optional)</string>
+    <string name="clear_date">Clear date</string>
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+    <string name="error_name_required">Please enter an ingredient name</string>
+    <string name="error_quantity_required">Please enter a quantity</string>
+    <string name="error_quantity_invalid">Quantity must be a number greater than 0</string>
+    <string name="item_saved">Item saved</string>
+    <string name="item_load_failed">Could not load that item</string>
+    <string name="save_failed">Could not save the item. Please try again.</string>
+
+    <string-array name="unit_options">
+        <item>unit</item>
+        <item>g</item>
+        <item>kg</item>
+        <item>ml</item>
+        <item>l</item>
+        <item>tsp</item>
+        <item>tbsp</item>
+        <item>cup</item>
+    </string-array>
+
 </resources>
