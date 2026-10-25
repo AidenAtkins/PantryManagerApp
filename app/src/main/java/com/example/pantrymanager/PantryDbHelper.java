@@ -169,6 +169,34 @@ public class PantryDbHelper extends SQLiteOpenHelper {
         return item;
     }
 
+    /**
+     * Deletes one pantry item by id. Returns the number of rows removed (1 on success).
+     */
+    public int deletePantryItem(long id) {
+        SQLiteDatabase db = getWritableDatabase();
+        return db.delete(TABLE_PANTRY_ITEMS, COL_PANTRY_ID + " = ?",
+                new String[]{String.valueOf(id)});
+    }
+
+    /**
+     * Returns true if another pantry item already uses this name (case-insensitive).
+     * Pass the id of the item being edited as excludeId so it doesn't clash with itself;
+     * pass -1 when adding a new item.
+     */
+    public boolean pantryItemNameExists(String name, long excludeId) {
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor cursor = db.query(
+                TABLE_PANTRY_ITEMS,
+                new String[]{COL_PANTRY_ID},
+                "LOWER(" + COL_PANTRY_NAME + ") = ? AND " + COL_PANTRY_ID + " != ?",
+                new String[]{name, String.valueOf(excludeId)},
+                null, null, null
+        );
+        boolean exists = cursor.moveToFirst();
+        cursor.close();
+        return exists;
+    }
+
     // Inserts one recipe row plus all of its required-ingredient rows.
     // Used only at first launch, to seed the 15-20 starter recipes the brief requires.
     private void insertRecipe(SQLiteDatabase db, String name, String steps, Object[][] ingredients) {

@@ -18,6 +18,15 @@
     <string name="item_saved">Item saved</string>
     <string name="item_load_failed">Could not load that item</string>
     <string name="save_failed">Could not save the item. Please try again.</string>
+    <string name="delete">Delete</string>
+    <string name="delete_title">Delete ingredient?</string>
+    <string name="delete_message">Delete %1$s from your pantry? This cannot be undone.</string>
+    <string name="item_deleted">Item deleted</string>
+    <string name="delete_failed">Could not delete the item. Please try again.</string>
+    <string name="error_name_too_long">Name must be 40 characters or fewer</string>
+    <string name="error_name_invalid">Use letters, spaces, hyphens or apostrophes only</string>
+    <string name="error_name_duplicate">This ingredient is already in your pantry. Edit it instead.</string>
+    <string name="error_quantity_too_large">Quantity must be 100000 or less</string>
 
     <string-array name="unit_options">
         <item>unit</item>

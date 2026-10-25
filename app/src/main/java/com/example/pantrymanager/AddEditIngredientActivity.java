@@ -7,18 +7,18 @@ import android.widget.Button;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
-
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
-
 import java.util.Calendar;
 import java.util.Locale;
+import android.view.View;
+import androidx.appcompat.app.AlertDialog;
+import java.util.regex.Pattern;
 
 /**
  * Add/Edit Ingredient screen from the brief.
@@ -33,16 +33,18 @@ public class AddEditIngredientActivity extends AppCompatActivity {
     // Key for the Intent extra that carries the id of the item being edited.
     public static final String EXTRA_ITEM_ID = "extra_item_id";
     private static final long NO_ITEM = -1;
-
+    private static final int MAX_NAME_LENGTH = 40;
+    private static final double MAX_QUANTITY = 100000;
+    // Starts with a letter; then letters, spaces, hyphens or apostrophes only.
+    private static final Pattern NAME_PATTERN = Pattern.compile("^\\p{L}[\\p{L} '\\-]*$");
     private PantryDbHelper dbHelper;
-
     private TextInputLayout nameLayout;
     private TextInputLayout quantityLayout;
     private TextInputEditText nameEdit;
     private TextInputEditText quantityEdit;
     private TextInputEditText expiryEdit;
     private Spinner unitSpinner;
-
+    private Button deleteButton;
     private long editingItemId = NO_ITEM; // NO_ITEM means we are adding a new item
 
     @Override
@@ -69,6 +71,7 @@ public class AddEditIngredientActivity extends AppCompatActivity {
         Button saveButton = findViewById(R.id.button_save);
         Button cancelButton = findViewById(R.id.button_cancel);
         Button clearDateButton = findViewById(R.id.button_clear_date);
+        deleteButton = findViewById(R.id.button_delete);
         TextView titleText = findViewById(R.id.text_screen_title);
 
         // Fill the unit dropdown from the string-array in strings.xml.
@@ -77,11 +80,14 @@ public class AddEditIngredientActivity extends AppCompatActivity {
         unitAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         unitSpinner.setAdapter(unitAdapter);
 
-        // Read the Intent: if it carries an item id, we are in EDIT mode.
+        // Read the Intent: if it carries an item id, it is in EDIT mode.
         editingItemId = getIntent().getLongExtra(EXTRA_ITEM_ID, NO_ITEM);
         if (editingItemId != NO_ITEM) {
             titleText.setText(R.string.edit_ingredient_title);
             loadItemIntoForm(editingItemId);
+            // Delete only makes sense when editing an existing item.
+            deleteButton.setVisibility(View.VISIBLE);
+            deleteButton.setOnClickListener(v -> confirmDelete());
         }
 
         expiryEdit.setOnClickListener(v -> showDatePicker());
@@ -138,24 +144,60 @@ public class AddEditIngredientActivity extends AppCompatActivity {
         }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show();
     }
 
+    // Asks for confirmation, then deletes the item and closes the screen.
+    private void confirmDelete() {
+        String name = nameEdit.getText() == null ? "" : nameEdit.getText().toString();
+
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.delete_title)
+                .setMessage(getString(R.string.delete_message, name))
+                .setPositiveButton(R.string.delete, (dialog, which) -> {
+                    if (dbHelper.deletePantryItem(editingItemId) > 0) {
+                        Toast.makeText(this, R.string.item_deleted, Toast.LENGTH_SHORT).show();
+                        finish(); // MainActivity.onResume() reloads the list
+                    } else {
+                        Toast.makeText(this, R.string.delete_failed, Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
+
+    // Validates the form, then inserts (ADD) or updates (EDIT) and closes the screen.
     // Validates the form, then inserts (ADD) or updates (EDIT) and closes the screen.
     private void saveItem() {
         nameLayout.setError(null);
         quantityLayout.setError(null);
 
-        // Lowercase + trimmed so names match the seeded recipe ingredients later.
-        String name = nameEdit.getText() == null ? "" : nameEdit.getText().toString().trim().toLowerCase(Locale.ROOT);
+        // Trim, collapse repeated spaces, lowercase: matches the seeded recipe ingredient names.
+        String rawName = nameEdit.getText() == null ? "" : nameEdit.getText().toString();
+        String name = rawName.trim().replaceAll("\\s+", " ").toLowerCase(Locale.ROOT);
         String quantityText = quantityEdit.getText() == null ? "" : quantityEdit.getText().toString().trim();
 
+        // ---- Name checks ----
         if (name.isEmpty()) {
             nameLayout.setError(getString(R.string.error_name_required));
             return;
         }
+        if (name.length() > MAX_NAME_LENGTH) {
+            nameLayout.setError(getString(R.string.error_name_too_long));
+            return;
+        }
+        if (!NAME_PATTERN.matcher(name).matches()) {
+            nameLayout.setError(getString(R.string.error_name_invalid));
+            return;
+        }
+        // One row per ingredient keeps the matching logic simple; edit the existing row instead.
+        if (dbHelper.pantryItemNameExists(name, editingItemId)) {
+            nameLayout.setError(getString(R.string.error_name_duplicate));
+            return;
+        }
+
+        // ---- Quantity checks ----
         if (quantityText.isEmpty()) {
             quantityLayout.setError(getString(R.string.error_quantity_required));
             return;
         }
-
         double quantity;
         try {
             quantity = Double.parseDouble(quantityText);
@@ -165,6 +207,10 @@ public class AddEditIngredientActivity extends AppCompatActivity {
         }
         if (quantity <= 0) {
             quantityLayout.setError(getString(R.string.error_quantity_invalid));
+            return;
+        }
+        if (quantity > MAX_QUANTITY) {
+            quantityLayout.setError(getString(R.string.error_quantity_too_large));
             return;
         }
 
@@ -185,7 +231,7 @@ public class AddEditIngredientActivity extends AppCompatActivity {
 
         if (success) {
             Toast.makeText(this, R.string.item_saved, Toast.LENGTH_SHORT).show();
-            finish(); // MainActivity.onResume() reloads the list
+            finish();
         } else {
             Toast.makeText(this, R.string.save_failed, Toast.LENGTH_SHORT).show();
         }
