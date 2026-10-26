@@ -187,11 +187,6 @@ public class AddEditIngredientActivity extends AppCompatActivity {
             nameLayout.setError(getString(R.string.error_name_invalid));
             return;
         }
-        // One row per ingredient keeps the matching logic simple; edit the existing row instead.
-        if (dbHelper.pantryItemNameExists(name, editingItemId)) {
-            nameLayout.setError(getString(R.string.error_name_duplicate));
-            return;
-        }
 
         // ---- Quantity checks ----
         if (quantityText.isEmpty()) {

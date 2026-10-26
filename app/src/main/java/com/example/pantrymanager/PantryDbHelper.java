@@ -5,7 +5,8 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
-
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -114,6 +115,41 @@ public class PantryDbHelper extends SQLiteOpenHelper {
         }
         cursor.close();
         return items;
+    }
+
+    /**
+     * Loads every recipe together with its required ingredients (two queries, joined in memory).
+     * Recipes come back sorted by name.
+     */
+    public List<Recipe> getAllRecipes() {
+        SQLiteDatabase db = getReadableDatabase();
+        Map<Long, Recipe> recipesById = new LinkedHashMap<>();
+
+        Cursor recipeCursor = db.query(TABLE_RECIPES, null, null, null, null, null,
+                COL_RECIPE_NAME + " ASC");
+        while (recipeCursor.moveToNext()) {
+            long id = recipeCursor.getLong(recipeCursor.getColumnIndexOrThrow(COL_RECIPE_ID));
+            String name = recipeCursor.getString(recipeCursor.getColumnIndexOrThrow(COL_RECIPE_NAME));
+            String steps = recipeCursor.getString(recipeCursor.getColumnIndexOrThrow(COL_RECIPE_STEPS));
+            recipesById.put(id, new Recipe(id, name, steps));
+        }
+        recipeCursor.close();
+
+        Cursor ingredientCursor = db.query(TABLE_RECIPE_INGREDIENTS, null, null, null, null, null, null);
+        while (ingredientCursor.moveToNext()) {
+            long recipeId = ingredientCursor.getLong(ingredientCursor.getColumnIndexOrThrow(COL_RI_RECIPE_ID));
+            String name = ingredientCursor.getString(ingredientCursor.getColumnIndexOrThrow(COL_RI_INGREDIENT_NAME));
+            double quantity = ingredientCursor.getDouble(ingredientCursor.getColumnIndexOrThrow(COL_RI_QUANTITY));
+            String unit = ingredientCursor.getString(ingredientCursor.getColumnIndexOrThrow(COL_RI_UNIT));
+
+            Recipe recipe = recipesById.get(recipeId);
+            if (recipe != null) {
+                recipe.addIngredient(new RecipeIngredient(name, quantity, unit));
+            }
+        }
+        ingredientCursor.close();
+
+        return new ArrayList<>(recipesById.values());
     }
 
     /**
