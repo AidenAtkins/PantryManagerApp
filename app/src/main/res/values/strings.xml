@@ -35,6 +35,12 @@
     <string name="method_header">Method</string>
     <string name="no_steps">No preparation steps available.</string>
     <string name="recipe_load_failed">Could not load that recipe</string>
+    <string name="nav_pantry">Pantry</string>
+    <string name="nav_recipes">Recipes</string>
+    <string name="nav_settings">Settings</string>
+    <string name="settings_title">Settings</string>
+    <string name="setting_ignore_expired">Ignore expired ingredients when suggesting recipes</string>
+    <string name="setting_ignore_expired_hint">Items whose expiry date has passed will not count towards a recipe.</string>
 
     <plurals name="recipes_you_can_make">
         <item quantity="one">%d recipe you can make right now</item>

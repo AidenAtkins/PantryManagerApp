@@ -1,5 +1,9 @@
 package com.example.pantrymanager;
 
+import com.google.android.material.bottomnavigation.BottomNavigationView;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
@@ -44,6 +48,9 @@ public class SuggestedRecipesActivity extends AppCompatActivity {
         noMatchesText = findViewById(R.id.text_no_matches);
         matchCountText = findViewById(R.id.text_match_count);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
+
+        BottomNavigationView bottomNav = findViewById(R.id.bottom_nav);
+        BottomNavHelper.setup(this, bottomNav, R.id.nav_recipes);
     }
 
     // Re-run the matching every time the screen is shown, so the list always
@@ -56,6 +63,11 @@ public class SuggestedRecipesActivity extends AppCompatActivity {
 
     private void loadSuggestions() {
         List<PantryItem> pantry = dbHelper.getAllPantryItems();
+        // Optional setting: expired items don't count towards a recipe.
+        if (AppSettings.isIgnoreExpiredEnabled(this)) {
+            String today = new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date());
+            pantry = RecipeMatcher.withoutExpired(pantry, today);
+        }
         List<Recipe> allRecipes = dbHelper.getAllRecipes();
 
         // The core business logic: only recipes whose ingredients are ALL covered.

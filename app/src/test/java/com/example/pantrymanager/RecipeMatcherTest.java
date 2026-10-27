@@ -140,4 +140,30 @@ public class RecipeMatcherTest {
         Recipe r = recipe("Toast", ing("bread", 2, "unit"));
         assertTrue(RecipeMatcher.canMake(r, Arrays.asList(item("bread", 2, null))));
     }
+
+    // ---------- expiry filtering (Settings: ignore expired items) ----------
+
+    @Test
+    public void withoutExpired_removesOnlyItemsPastTheirExpiryDate() {
+        PantryItem expired = new PantryItem(1, "milk", 1, "l", "2026-01-01");
+        PantryItem expiresToday = new PantryItem(2, "egg", 3, "unit", "2026-10-27");
+        PantryItem noDate = new PantryItem(3, "rice", 1, "cup", null);
+
+        List<PantryItem> result = RecipeMatcher.withoutExpired(
+                Arrays.asList(expired, expiresToday, noDate), "2026-10-27");
+
+        assertEquals(2, result.size());
+        assertFalse(result.contains(expired));
+    }
+
+    @Test
+    public void expiredItem_stopsRecipeMatching_onlyWhenFiltered() {
+        Recipe r = recipe("Omelette", ing("egg", 3, "unit"));
+        PantryItem expiredEggs = new PantryItem(1, "egg", 3, "unit", "2026-01-01");
+
+        assertTrue(RecipeMatcher.canMake(r, Arrays.asList(expiredEggs)));
+        assertFalse(RecipeMatcher.canMake(r,
+                RecipeMatcher.withoutExpired(Arrays.asList(expiredEggs), "2026-10-27")));
+    }
+
 }

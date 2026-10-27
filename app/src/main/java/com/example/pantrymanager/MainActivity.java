@@ -1,10 +1,10 @@
 package com.example.pantrymanager;
 
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.Button;
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
@@ -56,9 +56,8 @@ public class MainActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
-        Button suggestedButton = findViewById(R.id.button_suggested_recipes);
-        suggestedButton.setOnClickListener(v ->
-                startActivity(new Intent(MainActivity.this, SuggestedRecipesActivity.class)));
+        BottomNavigationView bottomNav = findViewById(R.id.bottom_nav);
+        BottomNavHelper.setup(this, bottomNav, R.id.nav_pantry);
     }
 
     // Reload every time this screen is shown again, so edits/adds/deletes made

@@ -50,6 +50,23 @@ public final class RecipeMatcher {
         return countMissing(recipe, groupByNormalizedName(pantry));
     }
 
+    /**
+     * Returns the pantry without items whose expiry date is before today.
+     * Items with no expiry date are kept. todayIso is "yyyy-MM-dd"; because that format
+     * sorts in date order, a plain string comparison is enough (no date parsing needed).
+     */
+    public static List<PantryItem> withoutExpired(List<PantryItem> pantry, String todayIso) {
+        List<PantryItem> kept = new ArrayList<>();
+        for (PantryItem item : pantry) {
+            String expiry = item.getExpiryDate();
+            boolean expired = expiry != null && !expiry.isEmpty() && expiry.compareTo(todayIso) < 0;
+            if (!expired) {
+                kept.add(item);
+            }
+        }
+        return kept;
+    }
+
     private static boolean isMakeable(Recipe recipe, Map<String, List<PantryItem>> pantryByName) {
         // A recipe with no ingredients is bad data, not "makeable".
         return !recipe.getIngredients().isEmpty() && countMissing(recipe, pantryByName) == 0;
