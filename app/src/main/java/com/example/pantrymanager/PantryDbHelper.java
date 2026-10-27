@@ -153,6 +153,41 @@ public class PantryDbHelper extends SQLiteOpenHelper {
     }
 
     /**
+     * Loads one recipe (with its ingredients, in the order they were seeded).
+     * Returns null if no recipe with that id exists.
+     */
+    public Recipe getRecipeById(long id) {
+        SQLiteDatabase db = getReadableDatabase();
+        String[] idArg = new String[]{String.valueOf(id)};
+
+        Recipe recipe = null;
+        Cursor recipeCursor = db.query(TABLE_RECIPES, null,
+                COL_RECIPE_ID + " = ?", idArg, null, null, null);
+        if (recipeCursor.moveToFirst()) {
+            String name = recipeCursor.getString(recipeCursor.getColumnIndexOrThrow(COL_RECIPE_NAME));
+            String steps = recipeCursor.getString(recipeCursor.getColumnIndexOrThrow(COL_RECIPE_STEPS));
+            recipe = new Recipe(id, name, steps);
+        }
+        recipeCursor.close();
+
+        if (recipe == null) {
+            return null;
+        }
+
+        Cursor ingredientCursor = db.query(TABLE_RECIPE_INGREDIENTS, null,
+                COL_RI_RECIPE_ID + " = ?", idArg, null, null, COL_RI_ID + " ASC");
+        while (ingredientCursor.moveToNext()) {
+            String name = ingredientCursor.getString(ingredientCursor.getColumnIndexOrThrow(COL_RI_INGREDIENT_NAME));
+            double quantity = ingredientCursor.getDouble(ingredientCursor.getColumnIndexOrThrow(COL_RI_QUANTITY));
+            String unit = ingredientCursor.getString(ingredientCursor.getColumnIndexOrThrow(COL_RI_UNIT));
+            recipe.addIngredient(new RecipeIngredient(name, quantity, unit));
+        }
+        ingredientCursor.close();
+
+        return recipe;
+    }
+
+    /**
      * Inserts a new pantry item. Returns the new row id, or -1 if the insert failed.
      */
     public long insertPantryItem(String name, double quantity, String unit, String expiryDate) {

@@ -31,7 +31,10 @@
     <string name="what_can_i_cook">What can I cook?</string>
     <string name="no_recipes_match">No recipes match your pantry yet - add more ingredients</string>
     <string name="recipe_needs">Needs: %1$s</string>
-    <string name="recipe_details_soon">%1$s details coming in stage 7</string>
+    <string name="ingredients_header">Ingredients</string>
+    <string name="method_header">Method</string>
+    <string name="no_steps">No preparation steps available.</string>
+    <string name="recipe_load_failed">Could not load that recipe</string>
 
     <plurals name="recipes_you_can_make">
         <item quantity="one">%d recipe you can make right now</item>

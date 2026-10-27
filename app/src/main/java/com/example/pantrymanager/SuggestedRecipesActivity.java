@@ -3,8 +3,7 @@ package com.example.pantrymanager;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
-import android.widget.Toast;
-
+import android.content.Intent;
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
@@ -76,9 +75,10 @@ public class SuggestedRecipesActivity extends AppCompatActivity {
         }
 
         recyclerView.setAdapter(new RecipeAdapter(makeable, recipe -> {
-            // TODO stage 7: open RecipeDetailActivity, passing recipe.getId()
-            Toast.makeText(this, getString(R.string.recipe_details_soon, recipe.getName()),
-                    Toast.LENGTH_SHORT).show();
+            // Pass only the id; the detail screen loads the full recipe itself.
+            Intent intent = new Intent(SuggestedRecipesActivity.this, RecipeDetailActivity.class);
+            intent.putExtra(RecipeDetailActivity.EXTRA_RECIPE_ID, recipe.getId());
+            startActivity(intent);
         }));
     }
 }
