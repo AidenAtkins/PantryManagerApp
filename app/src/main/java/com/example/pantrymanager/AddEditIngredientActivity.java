@@ -19,6 +19,7 @@ import java.util.Locale;
 import android.view.View;
 import androidx.appcompat.app.AlertDialog;
 import java.util.regex.Pattern;
+import androidx.appcompat.app.AlertDialog;
 
 /**
  * Add/Edit Ingredient screen from the brief.
@@ -105,7 +106,7 @@ public class AddEditIngredientActivity extends AppCompatActivity {
             return;
         }
 
-        nameEdit.setText(item.getIngredientName());
+        nameEdit.setText(item.getDisplayName());
 
         double qty = item.getQuantity();
         quantityEdit.setText(qty == Math.floor(qty)
@@ -165,6 +166,8 @@ public class AddEditIngredientActivity extends AppCompatActivity {
 
     // Validates the form, then inserts (ADD) or updates (EDIT) and closes the screen.
     // Validates the form, then inserts (ADD) or updates (EDIT) and closes the screen.
+    // Validates the form. When ADDING something that looks like an ingredient already in the
+    // pantry, asks whether it is a new batch. Otherwise saves straight away.
     private void saveItem() {
         nameLayout.setError(null);
         quantityLayout.setError(null);
@@ -217,6 +220,28 @@ public class AddEditIngredientActivity extends AppCompatActivity {
             expiry = null;
         }
 
+        // Several rows of one ingredient are allowed (separate batches), but when ADDING
+        // we confirm first, so "Tomato" then "Tomatoes" is a choice, not an accident.
+        if (editingItemId == NO_ITEM && dbHelper.pantryItemNameExists(name, NO_ITEM)) {
+            final String finalName = name;
+            final double finalQuantity = quantity;
+            final String finalUnit = unit;
+            final String finalExpiry = expiry;
+            new AlertDialog.Builder(this)
+                    .setTitle(R.string.batch_title)
+                    .setMessage(getString(R.string.batch_message, rawName.trim()))
+                    .setPositiveButton(R.string.batch_add, (dialog, which) ->
+                            persistItem(finalName, finalQuantity, finalUnit, finalExpiry))
+                    .setNegativeButton(R.string.cancel, null)
+                    .show();
+            return;
+        }
+
+        persistItem(name, quantity, unit, expiry);
+    }
+
+    // Writes the item to the database (insert in ADD mode, update in EDIT mode) and closes the screen.
+    private void persistItem(String name, double quantity, String unit, String expiry) {
         boolean success;
         if (editingItemId == NO_ITEM) {
             success = dbHelper.insertPantryItem(name, quantity, unit, expiry) != -1;
@@ -226,7 +251,7 @@ public class AddEditIngredientActivity extends AppCompatActivity {
 
         if (success) {
             Toast.makeText(this, R.string.item_saved, Toast.LENGTH_SHORT).show();
-            finish();
+            finish(); // MainActivity.onResume() reloads the list
         } else {
             Toast.makeText(this, R.string.save_failed, Toast.LENGTH_SHORT).show();
         }

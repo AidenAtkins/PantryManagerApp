@@ -254,18 +254,20 @@ public class PantryDbHelper extends SQLiteOpenHelper {
      * Pass the id of the item being edited as excludeId so it doesn't clash with itself;
      * pass -1 when adding a new item.
      */
+    /**
+     * Returns true if another pantry item is the same ingredient (ignoring case and
+     * plural form, e.g. "Banana" vs "bananas"). Pass the id of the item being edited
+     * as excludeId; pass -1 when adding a new item.
+     */
     public boolean pantryItemNameExists(String name, long excludeId) {
-        SQLiteDatabase db = getReadableDatabase();
-        Cursor cursor = db.query(
-                TABLE_PANTRY_ITEMS,
-                new String[]{COL_PANTRY_ID},
-                "LOWER(" + COL_PANTRY_NAME + ") = ? AND " + COL_PANTRY_ID + " != ?",
-                new String[]{name, String.valueOf(excludeId)},
-                null, null, null
-        );
-        boolean exists = cursor.moveToFirst();
-        cursor.close();
-        return exists;
+        String target = IngredientNormalizer.normalize(name);
+        for (PantryItem item : getAllPantryItems()) {
+            if (item.getId() != excludeId
+                    && IngredientNormalizer.normalize(item.getIngredientName()).equals(target)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // Inserts one recipe row plus all of its required-ingredient rows.

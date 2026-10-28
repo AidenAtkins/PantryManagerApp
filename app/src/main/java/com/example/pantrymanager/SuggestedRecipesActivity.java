@@ -15,7 +15,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
+import androidx.recyclerview.widget.DividerItemDecoration;
 import java.util.List;
 
 /**
@@ -48,6 +48,7 @@ public class SuggestedRecipesActivity extends AppCompatActivity {
         noMatchesText = findViewById(R.id.text_no_matches);
         matchCountText = findViewById(R.id.text_match_count);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        recyclerView.addItemDecoration(new DividerItemDecoration(this, DividerItemDecoration.VERTICAL));
 
         BottomNavigationView bottomNav = findViewById(R.id.bottom_nav);
         BottomNavHelper.setup(this, bottomNav, R.id.nav_recipes);

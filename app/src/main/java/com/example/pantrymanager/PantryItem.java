@@ -28,6 +28,17 @@ public class PantryItem {
         return ingredientName;
     }
 
+    // For showing on screen only: "olive oil" -> "Olive Oil". The stored value stays lowercase.
+    public String getDisplayName() {
+        StringBuilder sb = new StringBuilder();
+        boolean startOfWord = true;
+        for (char c : ingredientName.toCharArray()) {
+            sb.append(startOfWord ? Character.toUpperCase(c) : c);
+            startOfWord = (c == ' ');
+        }
+        return sb.toString();
+    }
+
     public double getQuantity() {
         return quantity;
     }
