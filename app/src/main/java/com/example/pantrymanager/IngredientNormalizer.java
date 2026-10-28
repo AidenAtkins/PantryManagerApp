@@ -42,6 +42,10 @@ public final class IngredientNormalizer {
             case "loaves":  return "loaf";
             case "halves":  return "half";
             case "knives":  return "knife";
+            case "cookies":   return "cookie";
+            case "brownies":  return "brownie";
+            case "smoothies": return "smoothie";
+            case "veggies":   return "veggie";
         }
 
         // cherries -> cherry, berries -> berry
@@ -54,7 +58,7 @@ public final class IngredientNormalizer {
             return word.substring(0, word.length() - 2);
         }
         // Words that end in s but are not plurals: hummus, couscous, watercress
-        if (word.endsWith("ss") || word.endsWith("us") || word.endsWith("is")) {
+        if (word.endsWith("ss") || word.endsWith("us")) {
             return word;
         }
         // Default: eggs -> egg, bananas -> banana, cloves -> clove

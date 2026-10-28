@@ -41,6 +41,7 @@
     <string name="settings_title">Settings</string>
     <string name="setting_ignore_expired">Ignore expired ingredients when suggesting recipes</string>
     <string name="setting_ignore_expired_hint">Items whose expiry date has passed will not count towards a recipe.</string>
+    <string name="no_recipes_empty_pantry">Your pantry is empty - add ingredients to see recipe suggestions</string>
 
     <plurals name="recipes_you_can_make">
         <item quantity="one">%d recipe you can make right now</item>

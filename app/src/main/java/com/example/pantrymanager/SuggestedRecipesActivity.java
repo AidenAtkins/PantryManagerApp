@@ -63,6 +63,8 @@ public class SuggestedRecipesActivity extends AppCompatActivity {
 
     private void loadSuggestions() {
         List<PantryItem> pantry = dbHelper.getAllPantryItems();
+        // Remember this BEFORE any expiry filtering, so the empty message stays accurate.
+        boolean pantryWasEmpty = pantry.isEmpty();
         // Optional setting: expired items don't count towards a recipe.
         if (AppSettings.isIgnoreExpiredEnabled(this)) {
             String today = new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date());
@@ -74,6 +76,9 @@ public class SuggestedRecipesActivity extends AppCompatActivity {
         List<Recipe> makeable = RecipeMatcher.findMakeableRecipes(allRecipes, pantry);
 
         if (makeable.isEmpty()) {
+            noMatchesText.setText(pantryWasEmpty
+                    ? R.string.no_recipes_empty_pantry
+                    : R.string.no_recipes_match);
             // Friendly message instead of a blank screen.
             recyclerView.setVisibility(View.GONE);
             matchCountText.setVisibility(View.GONE);

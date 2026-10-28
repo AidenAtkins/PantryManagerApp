@@ -126,13 +126,17 @@ public class RecipeMatcherTest {
 
     @Test
     public void incompatibleUnits_areNotMatched() {
-        // Eggs counted in grams cannot satisfy "3 eggs".
-        Recipe r = recipe("Omelette", ing("egg", 3, "unit"));
-        assertFalse(RecipeMatcher.canMake(r, Arrays.asList(item("egg", 500, "g"))));
+        // No average item weight is known for cheese, so a count can't satisfy grams.
+        Recipe r = recipe("Cheese toast", ing("cheese", 50, "g"));
+        assertFalse(RecipeMatcher.canMake(r, Arrays.asList(item("cheese", 2, "unit"))));
 
         // Unknown ingredient: no density known, so grams cannot satisfy cups.
         Recipe r2 = recipe("Mystery", ing("quinoa", 1, "cup"));
         assertFalse(RecipeMatcher.canMake(r2, Arrays.asList(item("quinoa", 500, "g"))));
+
+        // A count can never become a volume.
+        Recipe r3 = recipe("Soup", ing("milk", 1, "cup"));
+        assertFalse(RecipeMatcher.canMake(r3, Arrays.asList(item("milk", 3, "unit"))));
     }
 
     @Test
@@ -164,6 +168,19 @@ public class RecipeMatcherTest {
         assertTrue(RecipeMatcher.canMake(r, Arrays.asList(expiredEggs)));
         assertFalse(RecipeMatcher.canMake(r,
                 RecipeMatcher.withoutExpired(Arrays.asList(expiredEggs), "2026-10-27")));
+    }
+
+    @Test
+    public void countAndWeight_convertUsingAverageItemWeight() {
+        Recipe omelette = recipe("Omelette", ing("egg", 3, "unit"));
+        assertTrue(RecipeMatcher.canMake(omelette, Arrays.asList(item("egg", 500, "g"))));   // ~10 eggs
+        assertFalse(RecipeMatcher.canMake(omelette, Arrays.asList(item("egg", 100, "g")))); // ~2 eggs
+
+        Recipe hash = recipe("Hash", ing("onion", 1, "unit"));
+        assertTrue(RecipeMatcher.canMake(hash, Arrays.asList(item("Onions", 1, "kg"))));
+
+        Recipe garlicDish = recipe("Garlic dish", ing("garlic clove", 10, "g"));
+        assertTrue(RecipeMatcher.canMake(garlicDish, Arrays.asList(item("garlic cloves", 4, "unit"))));
     }
 
 }

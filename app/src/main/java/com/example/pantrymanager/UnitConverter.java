@@ -11,8 +11,11 @@ import java.util.Map;
  *   COUNT  -> "unit"
  *   MASS   -> grams
  *   VOLUME -> millilitres
- * Within a family conversion is exact. Between MASS and VOLUME it is only possible for
- * ingredients listed in the (approximate) density table. Anything else is "not convertible".
+ * Within a family conversion is exact. Between families it is only possible with extra
+ * knowledge about the ingredient:
+ *   MASS  <-> VOLUME : approximate density (grams per millilitre)
+ *   COUNT <-> MASS   : approximate weight of one item (grams)
+ * Anything else is "not convertible", and the matcher treats that as "not enough".
  */
 public final class UnitConverter {
 
@@ -22,6 +25,7 @@ public final class UnitConverter {
     private static final Map<String, Double> TO_BASE = new HashMap<>();   // factor into g / ml / count
     private static final Map<String, String> ALIASES = new HashMap<>();
     private static final Map<String, Double> DENSITY_G_PER_ML = new HashMap<>();
+    private static final Map<String, Double> AVERAGE_WEIGHT_G = new HashMap<>(); // grams per item
 
     static {
         define("unit", Family.COUNT, 1);
@@ -62,6 +66,16 @@ public final class UnitConverter {
         DENSITY_G_PER_ML.put("olive oil", 0.92);
         DENSITY_G_PER_ML.put("water", 1.0);
         DENSITY_G_PER_ML.put("cheese", 0.4);   // grated
+
+        // Approximate weight in grams of ONE item, for ingredients usually counted.
+        AVERAGE_WEIGHT_G.put("egg", 50.0);
+        AVERAGE_WEIGHT_G.put("tomato", 120.0);
+        AVERAGE_WEIGHT_G.put("onion", 150.0);
+        AVERAGE_WEIGHT_G.put("potato", 170.0);
+        AVERAGE_WEIGHT_G.put("carrot", 80.0);
+        AVERAGE_WEIGHT_G.put("garlic clove", 5.0);
+        AVERAGE_WEIGHT_G.put("chicken breast", 200.0);
+        AVERAGE_WEIGHT_G.put("bread", 30.0);   // one slice
     }
 
     private UnitConverter() {
@@ -104,16 +118,24 @@ public final class UnitConverter {
         double base = quantity * TO_BASE.get(from);
 
         if (fromFamily != toFamily) {
-            // A count can never be turned into a weight or volume.
             if (fromFamily == Family.COUNT || toFamily == Family.COUNT) {
-                return null;
+                // Counts can only be compared with weights, using the weight of one item.
+                Family other = (fromFamily == Family.COUNT) ? toFamily : fromFamily;
+                Double itemWeight = AVERAGE_WEIGHT_G.get(normalizedName);
+                if (other != Family.MASS || itemWeight == null) {
+                    return null;
+                }
+                // items -> grams multiplies by the item weight; grams -> items divides by it.
+                base = (fromFamily == Family.COUNT) ? base * itemWeight : base / itemWeight;
+            } else {
+                // MASS <-> VOLUME needs a density.
+                Double density = DENSITY_G_PER_ML.get(normalizedName);
+                if (density == null) {
+                    return null;
+                }
+                // grams -> ml divides by density; ml -> grams multiplies by it.
+                base = (fromFamily == Family.MASS) ? base / density : base * density;
             }
-            Double density = DENSITY_G_PER_ML.get(normalizedName);
-            if (density == null) {
-                return null;
-            }
-            // grams -> ml divides by density; ml -> grams multiplies by it.
-            base = (fromFamily == Family.MASS) ? base / density : base * density;
         }
 
         return base / TO_BASE.get(to);
